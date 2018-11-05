@@ -7,10 +7,11 @@ def call(Map config) {
       def appRepo = config.appRepo
       def deployNameSpace = config.deployNameSpace
       def repo = checkout scm
+      def branch = config.branch ?: env.BRANCH_NAME
       def gitVersion = sh(returnStdout: true, script: 'git describe --tags --dirty=.dirty').trim()
 
       stage('Checkout repo') {
-        git url: "git@${gitProvider}:${appRepo}/${appName}.git", branch: env.BRANCH_NAME
+        git url: "git@${gitProvider}:${appRepo}/${appName}.git", branch: ${branch}
       }
 
       stage('Build') {
@@ -18,7 +19,7 @@ def call(Map config) {
       }
 
       stage('Update deployment') {
-        if (env.BRANCH_NAME == 'master') {
+        if (branch == 'master') {
           sh "kubectl apply -f k8s.yaml"
           sh "kubectl set image deployment/${appName} ${appName}=${appRepo}/${appName}:${gitVersion} -n ${deployNameSpace}"
         }
